@@ -15,12 +15,13 @@ contract TodoContract {
   error Todo_Already_Registered();
   error Todo_Unregistered();
   error Todo_Empty_Content_Not_Allowed();
+  error Todo_Not_Exist();
 
   struct Todo {
     uint256 id;
     string content;
     uint256 createAt;
-    bool isChecked;
+    bool isComplete;
   }
 
   mapping(address user => bool) private registeredUsers;
@@ -37,6 +38,13 @@ contract TodoContract {
     _;
   }
 
+  modifier OnlyExistTodo(uint256 _todoId) {
+    if (todoList[msg.sender][_todoId].createAt == 0) {
+      revert Todo_Not_Exist();
+    }
+    _;
+  }
+
   function registerUser() external {
     if (registeredUsers[msg.sender]) {
       revert Todo_Already_Registered();
@@ -44,10 +52,6 @@ contract TodoContract {
 
     registeredUsers[msg.sender] = true;
     emit UserRegistered(msg.sender);
-  }
-
-  function checkUserExist(address _user) external view returns (bool) {
-    return registeredUsers[_user];
   }
 
   function createTodo(string calldata _content) external onlyRegistered {
@@ -59,16 +63,33 @@ contract TodoContract {
     Todo memory newTodo = Todo({
       content: _content,
       createAt: block.timestamp,
-      isChecked: false,
+      isComplete: false,
       id: newId
     });
 
     todoList[msg.sender][newId] = newTodo;
+    todoCount[msg.sender]++;
+  }
+
+  function checkTodoById(
+    uint256 _todoId
+  ) external onlyRegistered OnlyExistTodo(_todoId) {
+    todoList[msg.sender][_todoId].isComplete = true;
+  }
+
+  function checkUserExist(address _user) external view returns (bool) {
+    return registeredUsers[_user];
   }
 
   function getTodoById(
     uint256 _todoId
-  ) external view onlyRegistered returns (Todo memory todo) {
+  )
+    external
+    view
+    onlyRegistered
+    OnlyExistTodo(_todoId)
+    returns (Todo memory todo)
+  {
     todo = todoList[msg.sender][_todoId];
   }
 }
