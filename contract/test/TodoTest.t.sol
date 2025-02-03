@@ -12,8 +12,8 @@ contract TodoTest is Test {
 
   uint256 public constant FIRST_TODO_ID = 1;
 
-  address public USER_A = makeAddr("user_a");
-  address public USER_B = makeAddr("user_b");
+  address public USER_REGISTERED = makeAddr("user_REGISTERED");
+  address public USER_UNREGISTERED = makeAddr("user_UNREGISTERED");
 
   function setUp() public {
     vm.startBroadcast();
@@ -21,41 +21,42 @@ contract TodoTest is Test {
     vm.stopBroadcast();
   }
 
+  modifier withRegisteredUser() {
+    // the next action will be performed by USER_REGISTERED
+    vm.prank(USER_REGISTERED);
+    // perform an action
+    todoContract.registerUser();
+    _;
+  }
+
   /*//////////////////////////////////////////////////////////
                           Register User
   //////////////////////////////////////////////////////////*/
-  function testRegisterNewUser() public {
-    // the next action will be performed by USER_A
-    vm.prank(USER_A);
+  function testRegisterNewUser() public withRegisteredUser {
     // perform an action
-    todoContract.registerUser();
-
-    // perform an action
-    bool isExist = todoContract.checkUserExist(USER_A);
+    bool isExist = todoContract.checkUserExist(USER_REGISTERED);
     // we expect that user has been registered successfully
     assertTrue(isExist);
   }
 
   function testRegisterNewUserEmitUserRegisteredEvent() public {
-    // the next action will be performed by USER_A
-    vm.prank(USER_A);
+    // the next action will be performed by USER_REGISTERED
+    vm.prank(USER_REGISTERED);
     // we expect the todoContract to emit an event
     vm.expectEmit(address(todoContract));
 
     // the event that we expect to see
-    emit UserRegistered(USER_A);
+    emit UserRegistered(USER_REGISTERED);
     // perform an action (will emit event above)
     todoContract.registerUser();
   }
 
-  function testRegisterNewUserWhenAlreadyRegistered() public {
-    // the next action will be performed by USER_A
-    vm.prank(USER_A);
-    // perform an action
-    todoContract.registerUser();
-
-    // the next action will be performed by USER_A
-    vm.prank(USER_A);
+  function testRegisterNewUserWhenAlreadyRegistered()
+    public
+    withRegisteredUser
+  {
+    // the next action will be performed by USER_REGISTERED
+    vm.prank(USER_REGISTERED);
     // we expect to see an error revert when perform next action
     vm.expectRevert(TodoContract.Todo_Already_Registered.selector);
     // perform action
@@ -73,23 +74,28 @@ contract TodoTest is Test {
   /*//////////////////////////////////////////////////////////
                               Todo
   //////////////////////////////////////////////////////////*/
-  function testCreateTodo() public {
-    vm.prank(USER_A);
+  function testCreateTodo() public withRegisteredUser {
+    vm.prank(USER_REGISTERED);
     todoContract.createTodo("hello world");
 
-    vm.prank(USER_A);
+    vm.prank(USER_REGISTERED);
     TodoContract.Todo memory todo = todoContract.getTodoById(FIRST_TODO_ID);
     assertEq(todo.id, FIRST_TODO_ID);
   }
 
-  function testCreateTodoWithEmptyContent() public {
-    vm.prank(USER_A);
+  function testCreateTodoWithEmptyContent() public withRegisteredUser {
+    vm.prank(USER_REGISTERED);
     vm.expectRevert(TodoContract.Todo_Empty_Content_Not_Allowed.selector);
 
     todoContract.createTodo("");
   }
 
-  function testCreateTodoByUnregisteredAddress() public {}
+  function testCreateTodoByUnregisteredAddress() public withRegisteredUser {
+    vm.prank(USER_UNREGISTERED);
+    vm.expectRevert(TodoContract.Todo_Unregistered.selector);
+
+    todoContract.createTodo("hello world");
+  }
 
   function testCheckTodo() public {}
 
@@ -103,9 +109,14 @@ contract TodoTest is Test {
 
   function testUnCheckTodoByDifferentRegisteredAddress() public {}
 
-  function testGetTodo() public {}
+  function testGetTodoByUnregisteredAddress() public withRegisteredUser {
+    vm.prank(USER_REGISTERED);
+    todoContract.createTodo("hello world");
+    vm.expectRevert(TodoContract.Todo_Unregistered.selector);
+    vm.prank(USER_UNREGISTERED);
 
-  function testGetTodoByUnregisteredAddress() public {}
+    todoContract.getTodoById(FIRST_TODO_ID);
+  }
 
   function testGetAllTodo() public {}
 

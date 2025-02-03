@@ -13,6 +13,7 @@ import {console} from "forge-std/Script.sol";
  */
 contract TodoContract {
   error Todo_Already_Registered();
+  error Todo_Unregistered();
   error Todo_Empty_Content_Not_Allowed();
 
   struct Todo {
@@ -29,6 +30,13 @@ contract TodoContract {
   event UserRegistered(address indexed user);
   event TodoCreated(address indexed user, uint256 todoId);
 
+  modifier onlyRegistered() {
+    if (!registeredUsers[msg.sender]) {
+      revert Todo_Unregistered();
+    }
+    _;
+  }
+
   function registerUser() external {
     if (registeredUsers[msg.sender]) {
       revert Todo_Already_Registered();
@@ -42,8 +50,10 @@ contract TodoContract {
     return registeredUsers[_user];
   }
 
-  function createTodo(string calldata _content) external {
-    require(bytes(_content).length > 0, Todo_Empty_Content_Not_Allowed());
+  function createTodo(string calldata _content) external onlyRegistered {
+    if (bytes(_content).length == 0) {
+      revert Todo_Empty_Content_Not_Allowed();
+    }
 
     uint256 newId = todoCount[msg.sender] + 1;
     Todo memory newTodo = Todo({
@@ -58,7 +68,7 @@ contract TodoContract {
 
   function getTodoById(
     uint256 _todoId
-  ) external view returns (Todo memory todo) {
+  ) external view onlyRegistered returns (Todo memory todo) {
     todo = todoList[msg.sender][_todoId];
   }
 }
