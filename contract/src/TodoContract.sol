@@ -77,6 +77,12 @@ contract TodoContract {
     todoList[msg.sender][_todoId].isComplete = true;
   }
 
+  function uncheckTodoById(
+    uint256 _todoId
+  ) external onlyRegistered OnlyExistTodo(_todoId) {
+    todoList[msg.sender][_todoId].isComplete = false;
+  }
+
   function checkUserExist(address _user) external view returns (bool) {
     return registeredUsers[_user];
   }

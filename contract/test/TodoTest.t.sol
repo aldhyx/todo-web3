@@ -135,11 +135,43 @@ contract TodoTest is Test {
     todoContract.checkTodoById(FIRST_TODO_ID);
   }
 
-  function testUnCheckTodo() public {}
+  function testUnCheckTodo() public withRegisteredUser {
+    vm.prank(USER_REGISTERED);
+    todoContract.createTodo("hello world");
 
-  function testUnCheckTodoByUnregisteredAddress() public {}
+    vm.prank(USER_REGISTERED);
+    todoContract.checkTodoById(FIRST_TODO_ID);
+    vm.prank(USER_REGISTERED);
+    todoContract.uncheckTodoById(FIRST_TODO_ID);
 
-  function testUnCheckTodoByDifferentRegisteredAddress() public {}
+    vm.prank(USER_REGISTERED);
+    TodoContract.Todo memory todo = todoContract.getTodoById(FIRST_TODO_ID);
+    assertEq(todo.isComplete, false);
+  }
+
+  function testUnCheckTodoByUnregisteredAddress() public withRegisteredUser {
+    vm.prank(USER_REGISTERED);
+    todoContract.createTodo("hello world");
+
+    vm.prank(USER_UNREGISTERED);
+    vm.expectRevert(TodoContract.Todo_Unregistered.selector);
+    todoContract.uncheckTodoById(FIRST_TODO_ID);
+  }
+
+  function testUnCheckTodoByDifferentRegisteredAddress()
+    public
+    withRegisteredUser
+  {
+    vm.prank(USER_REGISTERED);
+    todoContract.createTodo("hello world");
+
+    vm.prank(USER_REGISTERED_2);
+    todoContract.registerUser();
+    vm.prank(USER_REGISTERED_2);
+    vm.expectRevert(TodoContract.Todo_Not_Exist.selector);
+
+    todoContract.uncheckTodoById(FIRST_TODO_ID);
+  }
 
   function testGetTodoByUnregisteredAddress() public withRegisteredUser {
     vm.prank(USER_REGISTERED);
