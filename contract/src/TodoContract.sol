@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.20;
+pragma solidity 0.8.27;
 import {console} from "forge-std/Script.sol";
 
 /**
@@ -13,6 +13,7 @@ import {console} from "forge-std/Script.sol";
  */
 contract TodoContract {
   error Todo_Already_Registered();
+  error Todo_Empty_Content_Not_Allowed();
 
   struct Todo {
     uint256 id;
@@ -21,10 +22,12 @@ contract TodoContract {
     bool isChecked;
   }
 
-  mapping(address user => bool) registeredUsers;
-  // mapping(address user => mapping(uint256 id => Todo) todo) todoList;
+  mapping(address user => bool) private registeredUsers;
+  mapping(address user => uint256 count) private todoCount;
+  mapping(address user => mapping(uint256 id => Todo) todo) private todoList;
 
   event UserRegistered(address indexed user);
+  event TodoCreated(address indexed user, uint256 todoId);
 
   function registerUser() external {
     if (registeredUsers[msg.sender]) {
@@ -37,5 +40,25 @@ contract TodoContract {
 
   function checkUserExist(address _user) external view returns (bool) {
     return registeredUsers[_user];
+  }
+
+  function createTodo(string calldata _content) external {
+    require(bytes(_content).length > 0, Todo_Empty_Content_Not_Allowed());
+
+    uint256 newId = todoCount[msg.sender] + 1;
+    Todo memory newTodo = Todo({
+      content: _content,
+      createAt: block.timestamp,
+      isChecked: false,
+      id: newId
+    });
+
+    todoList[msg.sender][newId] = newTodo;
+  }
+
+  function getTodoById(
+    uint256 _todoId
+  ) external view returns (Todo memory todo) {
+    todo = todoList[msg.sender][_todoId];
   }
 }

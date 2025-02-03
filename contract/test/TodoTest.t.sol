@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.20;
+pragma solidity 0.8.27;
 
 import {Test} from "forge-std/Test.sol";
 import {console} from "forge-std/Script.sol";
@@ -9,6 +9,8 @@ contract TodoTest is Test {
   TodoContract todoContract;
 
   event UserRegistered(address indexed user);
+
+  uint256 public constant FIRST_TODO_ID = 1;
 
   address public USER_A = makeAddr("user_a");
   address public USER_B = makeAddr("user_b");
@@ -71,9 +73,21 @@ contract TodoTest is Test {
   /*//////////////////////////////////////////////////////////
                               Todo
   //////////////////////////////////////////////////////////*/
-  function testCreateTodo() public {}
+  function testCreateTodo() public {
+    vm.prank(USER_A);
+    todoContract.createTodo("hello world");
 
-  function testCreateTodoWithEmptyContent() public {}
+    vm.prank(USER_A);
+    TodoContract.Todo memory todo = todoContract.getTodoById(FIRST_TODO_ID);
+    assertEq(todo.id, FIRST_TODO_ID);
+  }
+
+  function testCreateTodoWithEmptyContent() public {
+    vm.prank(USER_A);
+    vm.expectRevert(TodoContract.Todo_Empty_Content_Not_Allowed.selector);
+
+    todoContract.createTodo("");
+  }
 
   function testCreateTodoByUnregisteredAddress() public {}
 
@@ -88,6 +102,10 @@ contract TodoTest is Test {
   function testUnCheckTodoByUnregisteredAddress() public {}
 
   function testUnCheckTodoByDifferentRegisteredAddress() public {}
+
+  function testGetTodo() public {}
+
+  function testGetTodoByUnregisteredAddress() public {}
 
   function testGetAllTodo() public {}
 
