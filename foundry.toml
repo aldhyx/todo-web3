@@ -8,7 +8,10 @@ broadcast = "contract/broadcast"
 libs = ["contract/lib"]
 
 remappings = [
-  "src/=contract/src/"
+  "src/=contract/src/",
+  "script/=contract/script/",
+  "foundry-devops/=contract/lib/foundry-devops/src"
 ]
+
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
